@@ -1,0 +1,16 @@
+{
+  "name": "Bottle Flip!",
+  "short_name": "Bottle Flip!",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#00fbff",
+  "icons": [
+    {
+      "src": "https://i.ibb.co/DPVwY81m/IMG-4406.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
