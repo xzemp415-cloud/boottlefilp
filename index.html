@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Boottle Flip! SV STORAGE</title>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+        
+        /* ПОЛНЫЙ БЛОК КОПИРОВАНИЯ И ВЫДЕЛЕНИЯ */
+        * { 
+            -webkit-tap-highlight-color: transparent; 
+            user-select: none; 
+            -webkit-user-select: none; 
+            -moz-user-select: none;
+            -ms-user-select: none;
+            touch-action: none; 
+            box-sizing: border-box; 
+        }
+        
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            overflow: hidden; background: #000; color: white; 
+            font-family: 'Orbitron', sans-serif; position: fixed;
+        }
+
+        .screen { display: none; width: 100vw; height: 100vh; position: absolute; flex-direction: column; align-items: center; justify-content: center; background-size: cover; background-position: center; }
+        .active { display: flex !important; }
+
+        /* СТАТИСТИКА В МЕНЮ */
+        .stats { 
+            position: absolute; top: 60px; left: 20px; 
+            background: rgba(0,0,0,0.8); padding: 15px; 
+            border-radius: 15px; border-left: 5px solid #39ff14; 
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.3); 
+        }
+
+        /* ОКНО ПРОКАЧКИ */
+        .upgrade-window { 
+            width: 90%; background: #111; border: 2px solid #00fbff; 
+            border-radius: 20px; padding: 25px; text-align: center; 
+            box-shadow: 0 0 20px rgba(0, 251, 255, 0.3);
+        }
+        .progress-container { 
+            width: 100%; height: 25px; background: #222; 
+            border-radius: 15px; margin: 20px 0; border: 1px solid #00fbff; overflow: hidden; 
+        }
+        #progress-fill { width: 0%; height: 100%; background: #00fbff; box-shadow: 0 0 10px #00fbff; transition: 0.4s; }
+
+        /* КНОПКИ */
+        .btn { background: rgba(0,0,0,0.9); color: #fff; border: 2px solid #39ff14; padding: 15px 30px; border-radius: 50px; font-size: 1.3rem; margin: 10px; cursor: pointer; text-shadow: 0 0 5px #fff; }
+        .upg-btn-neon { border-color: #bc13fe; color: #bc13fe; box-shadow: 0 0 15px #bc13fe; }
+        .back-btn { position: absolute; top: 20px; left: 20px; background: none; border: 2px solid #39ff14; color: #39ff14; font-size: 1.5rem; padding: 5px 15px; border-radius: 10px; }
+        
+        input { padding: 15px; background: #111; border: 2px solid #ff00ff; color: #fff; border-radius: 15px; text-align: center; font-family: 'Orbitron'; outline: none; }
+    </style>
+</head>
+<body oncontextmenu="return false;" onselectstart="return false;">
+
+    <div id="loading-screen" class="screen active">
+        <h2 style="color:#39ff14; text-shadow: 0 0 10px #39ff14;">SV STORAGE LOADING...</h2>
+    </div>
+
+    <div id="nickname-screen" class="screen">
+        <input type="text" id="nick-input" placeholder="НИКНЕЙМ">
+        <button class="btn" onclick="saveNick()">ВОЙТИ</button>
+    </div>
+
+    <div id="menu-screen" class="screen" style="background-image: url('https://i.ibb.co/844Cn9dP/IMG-4684.jpg');">
+        <div class="stats">
+            <span id="player-name" style="color:#00fbff">АКК: ...</span><br>
+            🪙: <span id="coins-ui">0</span> | 🍾: <span id="caps-ui">0</span>
+        </div>
+        <button class="btn" onclick="startGame()">ИГРАТЬ</button>
+        <button class="btn" style="border-color:#00fbff" onclick="alert('МАРКЕТ SV ПУСТ')">МАГАЗИН</button>
+        <button class="btn upg-btn-neon" onclick="openUpgrade()">ПРОКАЧКА</button>
+    </div>
+
+    <div id="upgrade-screen" class="screen">
+        <button class="back-btn" onclick="showMenu()"><</button>
+        <div class="upgrade-window">
+            <h2 style="color:#bc13fe; margin:0;">ПРОКАЧКА</h2>
+            <div id="lvl-txt" style="font-size: 1.8rem; color:#39ff14; margin-top:10px;">LVL 0</div>
+            <div class="progress-container"><div id="progress-fill"></div></div>
+            <button class="btn" style="border-color:#00fbff; color:#00fbff; font-size:1rem;" onclick="buyLevel()">ПРОКАЧАТЬ 50 🪙</button>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div id="counter" style="position:absolute; top:60px; right:30px; font-size:4rem; color:#39ff14; z-index:10;">0/5</div>
+        <img id="game-img" src="https://i.ibb.co/nsvmZN7s/IMG-4687.jpg" style="width:100%; height:100%; object-fit:cover;">
+    </div>
+
+    <script>
+        const ADMIN_ID = "Dlxxisn1927367вдвшочлвщossihxjsd$023837$.&:&:$.skjddk";
+        
+        // ЗАГРУЗКА ИЗ STORAGE
+        let coins = parseInt(localStorage.getItem('sv_coins')) || 0;
+        let caps = parseInt(localStorage.getItem('sv_caps')) || 0;
+        let lvl = parseInt(localStorage.getItem('sv_lvl')) || 0;
+        let exp = parseInt(localStorage.getItem('sv_exp')) || 0;
+        let promoUsed = localStorage.getItem('sv_promo_mateo') === 'true';
+
+        window.onload = () => {
+            updateUI();
+            setTimeout(() => {
+                document.getElementById('loading-screen').classList.remove('active');
+                if (localStorage.getItem('sv_user')) showMenu();
+                else document.getElementById('nickname-screen').classList.add('active');
+            }, 2500);
+        };
+
+        function updateUI() {
+            document.getElementById('coins-ui').innerText = coins;
+            document.getElementById('caps-ui').innerText = caps;
+            document.getElementById('lvl-txt').innerText = "LVL " + lvl;
+            document.getElementById('progress-fill').style.width = exp + "%";
+            
+            // Сохраняем каждое изменение
+            localStorage.setItem('sv_coins', coins);
+            localStorage.setItem('sv_caps', caps);
+            localStorage.setItem('sv_lvl', lvl);
+            localStorage.setItem('sv_exp', exp);
+        }
+
+        function saveNick() {
+            let n = document.getElementById('nick-input').value.trim();
+            if(n) {
+                localStorage.setItem('sv_user', n);
+                if(n === ADMIN_ID) { coins = 210; caps = 150; }
+                showMenu();
+            }
+        }
+
+        function showMenu() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('menu-screen').classList.add('active');
+            document.getElementById('player-name').innerText = "АКК: " + localStorage.getItem('sv_user').substring(0,8);
+            updateUI();
+        }
+
+        function openUpgrade() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('upgrade-screen').classList.add('active');
+        }
+
+        function buyLevel() {
+            if(coins >= 50) {
+                coins -= 50; lvl++; exp = 0;
+                updateUI();
+                alert("УРОВЕНЬ ПОВЫШЕН!");
+            } else {
+                alert("НЕДОСТАТОЧНО МОНЕТ! 🪙");
+            }
+        }
+
+        function startGame() {
+            let score = 0;
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('game-screen').classList.add('active');
+            
+            document.getElementById('game-screen').onclick = () => {
+                score++;
+                document.getElementById('counter').innerText = score + "/5";
+                if(score >= 5) {
+                    // Логика опыта: 2 победы = 1 уровень
+                    exp += 50;
+                    if(exp >= 100) { exp = 0; lvl++; }
+                    coins += 20; caps += 50;
+                    updateUI();
+                    alert("ПОБЕДА! СОХРАНЕНО В SV STORAGE");
+                    showMenu();
+                }
+            };
+        }
+
+        // Блокировка системных клавиш (на всякий случай)
+        document.addEventListener('keydown', e => {
+            if (e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 'u')) e.preventDefault();
+        });
+    </script>
+</body>
+</html>
